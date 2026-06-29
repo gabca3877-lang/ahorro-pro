@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>AhorraPro PRO</title>
+
+<style>
+body {
+    font-family: Arial;
+    background: #f2f2f2;
+    margin: 0;
+}
+
+.login {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.login-box {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    width: 300px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+header {
+    background: #2bbbad;
+    color: white;
+    text-align: center;
+    padding: 15px;
+    font-size: 24px;
+}
+
+.container {
+    max-width: 900px;
+    margin: auto;
+    padding: 20px;
+}
+
+.card {
+    background: white;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+input, button {
+    padding: 10px;
+    margin: 5px 0;
+    width: 100%;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+button {
+    background: #2bbbad;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-sec {
+    background: white;
+    color: #2bbbad;
+    border: 2px solid #2bbbad;
+}
+
+.tarjeta {
+    background: linear-gradient(135deg,#2bbbad,#3a6ff7);
+    color: white;
+}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div id="auth" class="login">
+    <div class="login-box">
+        <h2>Acceso</h2>
+        <input id="edad" type="number" placeholder="Edad">
+        <input id="usuario" placeholder="Usuario">
+        <input id="password" type="password" placeholder="Contraseña">
+        <input id="cuenta" placeholder="Número de cuenta bancaria">
+        <button onclick="registrar()">Registrarse</button>
+        <button class="btn-sec" onclick="login()">Entrar</button>
+    </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none;">
+<header>AhorraPro PRO</header>
+
+<div class="container">
+
+<!-- TARJETA -->
+<div class="card tarjeta">
+    <h3>Mi Cartera 💳</h3>
+    <p id="numeroCuenta">**** **** **** 0000</p>
+    <h1 id="saldo">$0</h1>
+</div>
+
+<!-- RECARGAR -->
+<div class="card">
+    <button onclick="recargar()">Recargar dinero a la tarjeta</button>
+</div>
+
+<!-- CREAR META -->
+<div class="card">
+    <h3>Crear Meta</h3>
+    <input id="nombre" placeholder="Nombre">
+    <input id="total" type="number" placeholder="Monto total">
+    <input id="fecha" type="date">
+    <button onclick="crearMeta()">Crear</button>
+</div>
+
+<div id="metas"></div>
+<div id="detalle"></div>
+
+<div class="card">
+    <button onclick="logout()">Cerrar sesión</button>
+</div>
+
+</div>
+</div>
+
+<script>
+window.onload = function () {
+
+let usuarioInput = document.getElementById("usuario");
+let passwordInput = document.getElementById("password");
+
+let nombreInput = document.getElementById("nombre");
+let totalInput = document.getElementById("total");
+let fechaInput = document.getElementById("fecha");
+
+let metas = JSON.parse(localStorage.getItem("metas") || "[]");
+let saldo = parseFloat(localStorage.getItem("saldo") || "0");
+
+// AUTO LOGIN
+if (localStorage.getItem("login") === "true") {
+    mostrarApp();
+}
+
+// REGISTRO
+window.registrar = function () {
+    let edad = parseInt(document.getElementById("edad").value);
+    let user = usuarioInput.value.trim();
+    let pass = passwordInput.value.trim();
+    let cuenta = document.getElementById("cuenta").value.trim();
+
+    if (!edad || !user || !pass || !cuenta) return alert("Completa todo");
+    if (edad < 18) return alert("Debes ser mayor de edad");
+
+    localStorage.setItem("user", user);
+    localStorage.setItem("pass", pass);
+    localStorage.setItem("cuenta", cuenta);
+    localStorage.setItem("saldo", "0");
+
+    alert("Registrado");
+};
+
+// LOGIN
+window.login = function () {
+    let edad = parseInt(document.getElementById("edad").value);
+    let user = usuarioInput.value.trim();
+    let pass = passwordInput.value.trim();
+
+    if (edad < 18) return alert("Acceso denegado");
+
+    if (
+        user === localStorage.getItem("user") &&
+        pass === localStorage.getItem("pass")
+    ) {
+        localStorage.setItem("login", "true");
+        mostrarApp();
+    } else {
+        alert("Datos incorrectos");
+    }
+};
+
+// LOGOUT
+window.logout = function () {
+    localStorage.removeItem("login");
+    location.reload();
+};
+
+function mostrarApp() {
+    document.getElementById("auth").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    render();
+}
+
+// ACTUALIZAR TARJETA
+function actualizarTarjeta() {
+    document.getElementById("saldo").innerText = "$" + saldo.toLocaleString();
+
+    let cuenta = localStorage.getItem("cuenta") || "0000";
+    let ultimos = cuenta.slice(-4);
+    document.getElementById("numeroCuenta").innerText = "**** **** **** " + ultimos;
+}
+
+// RECARGAR DINERO
+window.recargar = function () {
+    let pass = prompt("Confirma tu contraseña");
+    if (pass !== localStorage.getItem("pass")) {
+        return alert("Contraseña incorrecta");
+    }
+
+    let monto = parseFloat(prompt("Monto a recargar"));
+    if (isNaN(monto) || monto <= 0) return;
+
+    saldo += monto;
+    localStorage.setItem("saldo", saldo);
+    actualizarTarjeta();
+};
+
+// GUARDAR
+function guardar() {
+    localStorage.setItem("metas", JSON.stringify(metas));
+}
+
+// CREAR META
+window.crearMeta = function () {
+    let nombre = nombreInput.value.trim();
+    let total = parseFloat(totalInput.value);
+    let fecha = fechaInput.value;
+
+    if (!nombre || isNaN(total) || !fecha) return alert("Completa todo");
+
+    metas.push({ nombre, total, actual: 0, fecha });
+
+    nombreInput.value = "";
+    totalInput.value = "";
+    fechaInput.value = "";
+
+    guardar();
+    render();
+};
+
+// AGREGAR DINERO A META
+window.agregarDinero = function (i) {
+    let pass = prompt("Contraseña");
+    if (pass !== localStorage.getItem("pass")) return alert("Error");
+
+    let monto = parseFloat(prompt("Monto"));
+    if (isNaN(monto) || monto > saldo) return alert("Saldo insuficiente");
+
+    saldo -= monto;
+    metas[i].actual += monto;
+
+    localStorage.setItem("saldo", saldo);
+    guardar();
+    render();
+    verDetalle(i);
+};
+
+// ELIMINAR
+window.eliminarMeta = function (i) {
+    metas.splice(i, 1);
+    guardar();
+    render();
+};
+
+// DETALLE
+window.verDetalle = function (i) {
+    let m = metas[i];
+    let porcentaje = Math.min((m.actual / m.total) * 100, 100);
+
+    document.getElementById("detalle").innerHTML = `
+    <div class="card">
+        <h2>${m.nombre}</h2>
+        <p>${porcentaje.toFixed(0)}%</p>
+        <p>$${m.actual} de $${m.total}</p>
+        <button onclick="agregarDinero(${i})">Añadir dinero</button>
+        <button onclick="render()">Volver</button>
+    </div>
+    `;
+};
+
+// RENDER
+function render() {
+    let html = "";
+
+    metas.forEach((m, i) => {
+        html += `
+        <div class="card">
+            <h3>${m.nombre}</h3>
+            <p>$${m.actual} / $${m.total}</p>
+            <button onclick="verDetalle(${i})">Ver</button>
+            <button onclick="eliminarMeta(${i})">Eliminar</button>
+        </div>
+        `;
+    });
+
+    document.getElementById("metas").innerHTML = html;
+    actualizarTarjeta();
+}
+
+};
+</script>
+
+</body>
+</html>
